@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useAuth } from "@/context/AuthContext";
 import { useEffect } from "react";
@@ -101,17 +101,22 @@ const RegisterPage = () => {
                 )}
               </div>
               {error.map((err, i) => (
-                <div
-                  key={i}
-                  className="bg-red-500 p-2 rounded text-white text-center"
-                >
+                <p key={i} className="text-red-500 ">
                   {err}
-                </div>
+                </p>
               ))}
-              <CardFooter className="flex justify-center w-full p-0">
-                <Button type="submit" className="hover:bg-slate-700 w-full">
+              <CardFooter className="flex justify-between w-ful p-0">
+                <Button type="submit" className="hover:bg-slate-700 ">
                   Register
                 </Button>
+                <Link
+                  to={"/login"}
+                  className="hover:text-slate-700 cursor-pointer"
+                >
+                  Already have an account?
+                  <br />
+                  Login
+                </Link>
               </CardFooter>
             </div>
           </form>

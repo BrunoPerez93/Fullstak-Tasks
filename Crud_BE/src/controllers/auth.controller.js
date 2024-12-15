@@ -1,7 +1,7 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import { createAccessToken } from "../libs/jwt.js";
-import { registerSchema } from "../schemas/auth.schema.js";
+import { loginSchema, registerSchema } from "../schemas/auth.schema.js";
 
 export const register = async (req, res) => {
   try {
@@ -43,15 +43,20 @@ export const register = async (req, res) => {
 };
 
 export const login = async (req, res) => {
-  const { email, password } = req.body;
-
   try {
-    const userFound = await User.findOne({ email });
+    const result = loginSchema.safeParse(req.body);
+    if (!result.success) {
+      return res
+        .status(400)
+        .json(result.error.errors.map((err) => err.message));
+    }
 
+    const { email, password } = result.data;
+
+    const userFound = await User.findOne({ email });
     if (!userFound) return res.status(400).json({ message: "User not found" });
 
     const isMatch = await bcrypt.compare(password, userFound.password);
-
     if (!isMatch)
       return res.status(400).json({ message: "Incorrect password" });
 
@@ -65,7 +70,7 @@ export const login = async (req, res) => {
       updatedAt: userFound.updatedAt,
     });
   } catch (error) {
-    res.status(500).json({ message: "error.message" });
+    res.status(500).json({ message: error.message });
   }
 };
 

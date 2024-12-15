@@ -8,17 +8,26 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { loginRequest } from "@/api/auth";
+import { useAuth } from "../context/AuthContext";
+import { useEffect } from "react";
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { register, handleSubmit } = useForm();
+  const { signin, error: signinErrors, isAuthenticated } = useAuth();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm();
 
-  const onSubmit = handleSubmit(async (values) => {
-    await loginRequest(values);
-    navigate("/");
+  useEffect(() => {
+    if (isAuthenticated) navigate("/tasks");
+  }, [isAuthenticated]);
+
+  const onSubmit = handleSubmit(async (data) => {
+    signin(data);
   });
 
   return (
@@ -35,8 +44,16 @@ const LoginPage = () => {
                 <Input
                   id="email"
                   placeholder="Enter your email"
-                  {...register("email", { required: true })}
+                  {...register("email", {
+                    required: "Email is required",
+                    pattern: {
+                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    },
+                  })}
                 />
+                {errors.email && (
+                  <p className="text-red-500">{errors.email.message}</p>
+                )}
               </div>
               <div className="flex flex-col space-y-1.5">
                 <Label htmlFor="password">Password</Label>
@@ -44,19 +61,29 @@ const LoginPage = () => {
                   id="password"
                   placeholder="Enter your password"
                   type="password"
-                  {...register("password", { required: true })}
+                  {...register("password", {
+                    required: "Password is required",
+                  })}
                 />
+                {errors.password && (
+                  <p className="text-red-500">{errors.password.message}</p>
+                )}
               </div>
+              {signinErrors.map((error, i) => (
+                <p key={i} className="text-red-500">
+                  {error}
+                </p>
+              ))}
               <CardFooter className="flex justify-between w-full p-0">
-                <Button
+                <Link
+                  to={"/register"}
                   type="button"
-                  className="hover:bg-slate-700"
-                  onClick={() => {
-                    navigate("/register");
-                  }}
+                  className="hover:text-slate-700 cursor-pointer"
                 >
+                  Dont have an account?
+                  <br />
                   Register
-                </Button>
+                </Link>
                 <Button type="submit" className="hover:bg-slate-700">
                   Login
                 </Button>

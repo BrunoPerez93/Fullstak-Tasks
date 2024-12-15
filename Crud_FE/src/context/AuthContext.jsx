@@ -1,5 +1,5 @@
-import { registerRequest } from "@/api/auth";
-import { createContext, useContext, useState } from "react";
+import { registerRequest, loginRequest } from "@/api/auth";
+import { createContext, useContext, useEffect, useState } from "react";
 
 export const AuthContext = createContext();
 
@@ -23,13 +23,59 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
       setError([]);
     } catch (error) {
-      setError(error.response.data);
+      console.error(error);
+      setError([
+        error.response?.data?.message || "An error occurred during signup",
+      ]);
     }
+  };
+
+  const signin = async (user) => {
+    try {
+      const res = await loginRequest(user);
+
+      if (res.data) {
+        setUser(res.data);
+        setIsAuthenticated(true);
+        setError([]);
+      }
+    } catch (error) {
+      if (error.response?.data?.message) {
+        setError([error.response.data.message]);
+      } else if (error.response?.data && Array.isArray(error.response.data)) {
+        setError(error.response.data);
+      } else {
+        setError(["An error occurred during login"]);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (error.length > 0) {
+      const timer = setTimeout(() => {
+        setError([]);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
+  const logout = () => {
+    setUser(null);
+    setIsAuthenticated(false);
+    setError([]);
   };
 
   return (
     <AuthContext.Provider
-      value={{ signup, user, isAuthenticated, error, setError }}
+      value={{
+        signup,
+        signin,
+        logout,
+        user,
+        isAuthenticated,
+        error,
+        setError,
+      }}
     >
       {children}
     </AuthContext.Provider>

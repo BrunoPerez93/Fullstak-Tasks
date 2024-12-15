@@ -1,18 +1,25 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import { createAccessToken } from "../libs/jwt.js";
+import { registerSchema } from "../schemas/auth.schema.js";
 
 export const register = async (req, res) => {
-  const { username, email, password } = req.body;
-
   try {
+    const result = registerSchema.safeParse(req.body);
+    if (!result.success) {
+      return res
+        .status(400)
+        .json(result.error.errors.map((err) => err.message));
+    }
+
+    const { username, email, password } = result.data;
+
     const userFound = await User.findOne({ email });
     if (userFound) {
-      return res.status(400).json({ message: "User already exists" });
+      return res.status(400).json(["El email ya está registrado"]);
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-
     const newUser = new User({
       username,
       email,
@@ -20,7 +27,6 @@ export const register = async (req, res) => {
     });
 
     const userSaved = await newUser.save();
-
     const token = await createAccessToken({ id: userSaved._id });
     res.cookie("token", token);
 
@@ -32,7 +38,7 @@ export const register = async (req, res) => {
       updatedAt: userSaved.updatedAt,
     });
   } catch (error) {
-    res.status(500).json({ message: "error.message" });
+    return res.status(500).json([error.message]);
   }
 };
 

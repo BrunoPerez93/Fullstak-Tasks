@@ -22,14 +22,9 @@ const RegisterPage = () => {
   } = useForm();
   const {
     signup,
-    isAuthenticated,
     error,
     setError: setContextError,
   } = useAuth();
-
-  useEffect(() => {
-    if (isAuthenticated) navigate("/tasks");
-  }, [isAuthenticated]);
 
   useEffect(() => {
     return () => setContextError([]);
@@ -38,6 +33,7 @@ const RegisterPage = () => {
   const onSubmit = handleSubmit(async (values) => {
     try {
       await signup(values);
+      navigate("/login");
     } catch (error) {
       console.log(error);
     }

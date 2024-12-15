@@ -1,13 +1,13 @@
-import { registerRequest, loginRequest } from "@/api/auth";
-import { createContext, useContext, useEffect, useState } from "react";
+import { useEffect } from "react";
+import { createContext, useContext, useState } from "react";
+import { loginRequest, registerRequest, verifyTokenRequest } from "../api/auth";
+import Cookies from "js-cookie";
 
-export const AuthContext = createContext();
+const AuthContext = createContext();
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used within a AuthProvider");
   return context;
 };
 
@@ -15,40 +15,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [error, setError] = useState([]);
-
-  const signup = async (user) => {
-    try {
-      const res = await registerRequest(user);
-      setUser(res.data);
-      setIsAuthenticated(true);
-      setError([]);
-    } catch (error) {
-      console.error(error);
-      setError([
-        error.response?.data?.message || "An error occurred during signup",
-      ]);
-    }
-  };
-
-  const signin = async (user) => {
-    try {
-      const res = await loginRequest(user);
-
-      if (res.data) {
-        setUser(res.data);
-        setIsAuthenticated(true);
-        setError([]);
-      }
-    } catch (error) {
-      if (error.response?.data?.message) {
-        setError([error.response.data.message]);
-      } else if (error.response?.data && Array.isArray(error.response.data)) {
-        setError(error.response.data);
-      } else {
-        setError(["An error occurred during login"]);
-      }
-    }
-  };
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (error.length > 0) {
@@ -59,25 +26,74 @@ export const AuthProvider = ({ children }) => {
     }
   }, [error]);
 
+  const signup = async (user) => {
+    try {
+      const res = await registerRequest(user);
+      if (res.status === 200) {
+        setUser(res.data);
+        setIsAuthenticated(true);
+      }
+    } catch (error) {
+      console.log(error.response.data);
+      setError(error.response.data.message);
+    }
+  };
+
+  const signin = async (user) => {
+    try {
+      const res = await loginRequest(user);
+      setUser(res.data);
+      setIsAuthenticated(true);
+    } catch (error) {
+      console.log(error);
+      // setError(error.response.data.message);
+    }
+  };
+
   const logout = () => {
+    Cookies.remove("token");
     setUser(null);
     setIsAuthenticated(false);
-    setError([]);
   };
+
+  useEffect(() => {
+    const checkLogin = async () => {
+      const cookies = Cookies.get();
+      if (!cookies.token) {
+        setIsAuthenticated(false);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const res = await verifyTokenRequest(cookies.token);
+        if (!res.data) return setIsAuthenticated(false);
+        setIsAuthenticated(true);
+        setUser(res.data);
+        setLoading(false);
+      } catch (error) {
+        setIsAuthenticated(false);
+        setLoading(false);
+      }
+    };
+    checkLogin();
+  }, []);
 
   return (
     <AuthContext.Provider
       value={{
+        user,
         signup,
         signin,
         logout,
-        user,
         isAuthenticated,
         error,
-        setError,
+        loading,
       }}
     >
       {children}
     </AuthContext.Provider>
   );
 };
+
+export default AuthContext;
